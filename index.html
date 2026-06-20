@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>arXiv.org > cs > arXiv:io-notebook-scholar</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    
+    <script>
+        // Customizing Tailwind to fit the academic/arXiv styling parameters
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                arxivRed: '#b31b1b',
+                arxivBlue: '#002f6c',
+                academicDarkBg: '#121212',
+                academicPaperBg: '#fbfbfb'
+              },
+              fontFamily: {
+                serif: ['Georgia', 'ui-serif', 'serif'],
+                mono: ['Courier New', 'Courier', 'monospace'],
+                sans: ['Inter', 'system-ui', 'sans-serif']
+              }
+            }
+          }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar adjustments for minimalist aesthetics */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 2px;
+        }
+        /* Custom animations for API status beacon */
+        @keyframes pulse-glow {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 4px rgba(16, 185, 129, 0.4);
+            }
+            50% {
+                transform: scale(1.15);
+                box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+            }
+        }
+        .pulse-active {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-[#f4f4f4] text-zinc-900 font-sans transition-colors duration-300 min-h-screen flex flex-col selection:bg-red-100 selection:text-arxivRed dark:bg-[#0c0c0c] dark:text-zinc-200 dark:selection:bg-red-950 dark:selection:text-red-200">
+
+    <!-- MAIN HEADER (arXiv Academic Replica Header) -->
+    <header class="border-b-2 border-zinc-300 bg-white px-6 py-3 dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
+        <div class="max-w-8xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <!-- arXiv Branding Block -->
+            <div class="flex items-center space-x-4">
+                <div class="flex items-baseline space-x-1.5">
+                    <span class="text-2xl font-bold font-serif tracking-tight text-arxivRed dark:text-red-500">ar<span class="font-sans font-light text-zinc-900 dark:text-zinc-100">X</span>iv</span>
+                    <span class="text-xs text-zinc-500 font-mono"> > cs > io-notebook-scholar</span>
+                </div>
+                <div class="hidden sm:block border-l border-zinc-300 h-6 dark:border-zinc-700"></div>
+                <div class="hidden sm:block text-xs font-mono text-zinc-500">
+                    <span class="text-arxivRed font-bold dark:text-red-400">Subject:</span> Research & Document Intelligence Platform
+                </div>
+            </div>
+
+            <!-- Global Action Center -->
+            <div class="flex flex-wrap items-center gap-4">
+                <!-- Theme Toggle -->
+                <button id="themeToggleBtn" onclick="toggleTheme()" class="p-1.5 px-3 rounded border border-zinc-300 hover:bg-zinc-100 font-mono text-xs text-zinc-600 transition-all flex items-center gap-2 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800" title="Toggle Academic Contrast (Dark/Light)">
+                    <i class="fa-solid fa-circle-half-stroke"></i>
+                    <span id="themeBtnText">Toggle Contrast</span>
+                </button>
+
+                <!-- Active Document Indicator Dropdown -->
+                <div id="headerDocContainer" class="hidden md:flex items-center space-x-2 border border-dashed border-zinc-300 px-3 py-1 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-850">
+                    <span class="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Active Study:</span>
+                    <select id="headerDocSelector" onchange="switchActiveDocument(this.value)" class="bg-transparent text-xs font-serif font-bold text-arxivRed focus:outline-none cursor-pointer max-w-[180px] truncate dark:text-red-400">
+                        <!-- Options filled dynamically -->
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE LAYOUT -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- ==================== LEFT PANEL: SUBMISSION PORTAL & STORAGE ==================== -->
+        <aside class="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-zinc-300 bg-[#ededed] p-5 flex flex-col space-y-5 overflow-y-auto dark:border-zinc-800 dark:bg-[#151515] flex-shrink-0">
+            
+            <!-- Academic Metadata / Credentials Panel -->
+            <div class="bg-white p-4 border border-zinc-300 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                        <i class="fa-solid fa-key text-zinc-400"></i> Gemini Node Key
+                    </span>
+                    <!-- Glowing Indicator Beacon -->
+                    <div class="flex items-center space-x-1.5">
+                        <span id="apiStatusText" class="text-[9px] font-mono text-zinc-500">Not Linked</span>
+                        <div id="apiBeacon" class="w-2.5 h-2.5 rounded-full bg-zinc-400 transition-all duration-300"></div>
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="relative">
+                        <input type="password" id="geminiApiKey" placeholder="AIZAsy..." onkeyup="handleApiKeyInput(event)" onchange="verifyApiKey()" onpaste="setTimeout(verifyApiKey, 100)" class="w-full bg-zinc-50 border border-zinc-300 text-xs font-mono px-2.5 py-1.5 pr-8 focus:outline-none focus:border-zinc-500 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-600" />
+                        <button onclick="verifyApiKey()" class="absolute right-2 top-2 text-zinc-400 hover:text-arxivRed dark:hover:text-red-400" title="Perform API Handshake">
+                            <i id="apiKeyVerifyIcon" class="fa-solid fa-vial text-xs"></i>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-zinc-500 font-serif leading-tight">
+                        * Keys are processed locally directly against the official Google Generative AI gateway.
+                    </p>
+                    <div id="apiFeedback" class="hidden text-[11px] font-mono p-1.5 bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50"></div>
+                </div>
+            </div>
+
+            <!-- Drag & Drop Upload Zone -->
+            <div class="bg-white p-4 border border-zinc-300 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+                <span class="text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 block mb-2">
+                    <i class="fa-solid fa-file-arrow-up"></i> Manuscript Upload
+                </span>
+                <div id="dropZone" onclick="triggerFileInput()" class="border-2 border-dashed border-zinc-300 bg-zinc-50 hover:bg-zinc-100/50 hover:border-zinc-500 p-6 text-center cursor-pointer transition-all duration-200 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900/50">
+                    <i class="fa-regular fa-file-pdf text-2xl text-zinc-400 mb-2"></i>
+                    <p class="text-xs font-serif font-bold text-zinc-700 dark:text-zinc-300">Submit PDF Manuscript(s)</p>
+                    <p class="text-[10px] font-mono text-zinc-500 mt-1">Multi-file parsing supported</p>
+                    <input type="file" id="pdfFileInput" multiple accept="application/pdf" class="hidden" onchange="handleFileSelect(event)" />
+                </div>
+            </div>
+
+            <!-- Uploaded Papers Index (Document Registry) -->
+            <div class="flex-1 flex flex-col min-h-0 bg-white p-4 border border-zinc-300 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
+                <span class="text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 block mb-3">
+                    <i class="fa-solid fa-folder-open"></i> Indexed Preprints (<span id="docCount">0</span>)
+                </span>
+                
+                <!-- Empty Placeholder -->
+                <div id="emptyDocsView" class="flex-1 flex flex-col items-center justify-center text-center p-4 border border-dashed border-zinc-200 dark:border-zinc-800">
+                    <i class="fa-solid fa-receipt text-zinc-300 text-3xl mb-2 dark:text-zinc-700"></i>
+                    <p class="text-xs font-serif italic text-zinc-500">No documents submitted to current session.</p>
+                </div>
+
+                <!-- Document List Container -->
+                <div id="docsList" class="hidden flex-1 overflow-y-auto space-y-2 pr-1">
+                    <!-- Dynamic Items injected here -->
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- ==================== CENTER PANEL: ACADEMIC MANUSCRIPT VIEWPORT ==================== -->
+        <main class="flex-1 bg-[#dcdcdc] p-4 md:p-6 flex flex-col min-w-0 overflow-hidden dark:bg-[#1d1d1d]">
+            
+            <!-- Document Viewer Action Toolbar -->
+            <div id="viewerToolbar" class="invisible bg-white border border-zinc-300 shadow-sm p-3 px-4 flex flex-col sm:flex-row items-center justify-between gap-3 dark:bg-zinc-900 dark:border-zinc-800 mb-4 flex-shrink-0">
+                <div class="flex items-center space-x-2.5 overflow-hidden w-full sm:w-auto">
+                    <span class="text-[9px] font-mono bg-arxivRed text-white px-1.5 py-0.5 font-bold uppercase tracking-wide rounded-sm">PREVIEW</span>
+                    <h3 id="currentDocTitle" class="text-xs font-serif font-bold text-zinc-800 truncate dark:text-zinc-200 max-w-[250px] sm:max-w-[320px]">
+                        No Document Selected
+                    </h3>
+                </div>
+
+                <!-- Reader controls (Pagination, Zoom, Mode toggles) -->
+                <div class="flex flex-wrap items-center justify-end gap-3 w-full sm:w-auto">
+                    <!-- Display mode toggle (Canvas vs Extracted Text) -->
+                    <button id="viewModeBtn" onclick="toggleTextMode()" class="text-[10px] font-mono px-2 py-1 border border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-zinc-300" title="Toggle Plain Text Extraction View">
+                        <i class="fa-solid fa-code text-xs mr-1"></i> <span id="viewModeText">TXT EXTRACT</span>
+                    </button>
+
+                    <!-- Page Navigator -->
+                    <div class="flex items-center space-x-1.5 border-l border-r border-zinc-300 px-3 dark:border-zinc-700">
+                        <button onclick="changePage(-1)" class="p-1 px-2 border border-zinc-300 hover:bg-zinc-50 text-xs dark:border-zinc-700 dark:hover:bg-zinc-800">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <span class="text-xs font-mono text-zinc-600 dark:text-zinc-400 min-w-[50px] text-center">
+                            <span id="currentPageNum">0</span> / <span id="totalPageNum">0</span>
+                        </span>
+                        <button onclick="changePage(1)" class="p-1 px-2 border border-zinc-300 hover:bg-zinc-50 text-xs dark:border-zinc-700 dark:hover:bg-zinc-800">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- Zoom settings -->
+                    <div class="flex items-center space-x-1">
+                        <button onclick="zoomViewport(-0.15)" class="p-1 px-2 border border-zinc-300 hover:bg-zinc-50 text-xs dark:border-zinc-700 dark:hover:bg-zinc-800" title="Zoom Out">
+                            <i class="fa-solid fa-magnifying-glass-minus text-xs"></i>
+                        </button>
+                        <span id="zoomText" class="text-[10px] font-mono text-zinc-500 w-10 text-center">100%</span>
+                        <button onclick="zoomViewport(0.15)" class="p-1 px-2 border border-zinc-300 hover:bg-zinc-50 text-xs dark:border-zinc-700 dark:hover:bg-zinc-800" title="Zoom In">
+                            <i class="fa-solid fa-magnifying-glass-plus text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Viewer Workspace -->
+            <div class="flex-1 overflow-auto flex justify-center items-start border border-zinc-300 bg-zinc-100 dark:bg-[#111] dark:border-zinc-800">
+                
+                <!-- Splash / No Paper loaded screen -->
+                <div id="viewerSplash" class="h-full flex flex-col items-center justify-center max-w-md text-center p-6 mx-auto">
+                    <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center border border-zinc-300 shadow-sm mb-4 dark:bg-zinc-900 dark:border-zinc-850">
+                        <i class="fa-solid fa-book-open-reader text-xl text-arxivRed dark:text-red-400 animate-pulse"></i>
+                    </div>
+                    <h3 class="text-sm font-serif font-bold tracking-tight mb-2 uppercase dark:text-zinc-200">No Document Selected</h3>
+                    <p class="text-xs font-serif italic text-zinc-500 leading-relaxed">
+                        Select an indexed preprint from the submission sidebar or import raw files. Once parsed, interactive document workspace will load automatically.
+                    </p>
+                </div>
+
+                <!-- PDF Render Surface Container -->
+                <div id="renderSurface" class="hidden relative p-4 max-w-full">
+                    
+                    <!-- HTML Canvas element for direct PDF rendering -->
+                    <div id="canvasContainer" class="bg-white border border-zinc-300 shadow-lg dark:border-zinc-800 transition-all duration-300 overflow-hidden">
+                        <canvas id="pdfCanvas" class="block mx-auto"></canvas>
+                    </div>
+
+                    <!-- Extract plain-text alternative view -->
+                    <div id="plainTextView" class="hidden max-w-2xl bg-white border border-zinc-300 shadow-lg p-6 font-serif text-sm leading-relaxed whitespace-pre-line text-zinc-800 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 select-text">
+                        <div class="border-b border-zinc-200 pb-3 mb-4 flex justify-between text-xs font-mono text-zinc-500 dark:border-zinc-800">
+                            <span>EXTRACTED PLAIN-TEXT: PAGE <span id="textPageNum">1</span></span>
+                            <span id="charCount">0 characters</span>
+                        </div>
+                        <div id="plainTextOutput" class="space-y-4">
+                            <!-- Injected by parser -->
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- ==================== RIGHT PANEL: AI SCHOLAR CHAT ==================== -->
+        <aside class="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-zinc-300 bg-[#fbfbfb] flex flex-col overflow-hidden dark:border-zinc-800 dark:bg-zinc-900 flex-shrink-0">
+            
+            <!-- Chat Header -->
+            <div class="p-4 border-b border-zinc-200 bg-white flex items-center justify-between dark:border-zinc-800 dark:bg-zinc-900 flex-shrink-0">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-robot text-arxivRed dark:text-red-400"></i>
+                    <span class="text-xs font-mono font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-300">
+                        AI Scholar Node
+                    </span>
+                </div>
+                <span class="text-[9px] font-mono bg-zinc-100 border border-zinc-200 text-zinc-500 px-2 py-0.5 rounded dark:bg-zinc-850 dark:border-zinc-800">
+                    gemini-2.5-flash
+                </span>
+            </div>
+
+            <!-- Messages Stream -->
+            <div id="chatStream" class="flex-1 overflow-y-auto p-4 space-y-4 font-serif text-xs leading-relaxed">
+                <!-- Welcome greeting -->
+                <div class="flex flex-col space-y-1.5 max-w-[90%] mr-auto items-start">
+                    <div class="flex items-center space-x-1.5 text-[9px] text-zinc-400 font-mono">
+                        <i class="fa-solid fa-microchip text-zinc-400"></i>
+                        <span>io.scholar</span>
+                    </div>
+                    <div class="p-3 border border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-950 text-zinc-700 dark:text-zinc-300">
+                        Hello, I am your arXiv peer-review assistant. Provide your Gemini Node Key, upload your PDF publications, and let's explore their findings together. 
+                        <br/><br/>
+                        All responses contain interactive clickable citation references!
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Query Submission Area -->
+            <form id="chatForm" onsubmit="handleSendQuery(event)" class="p-4 border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 flex-shrink-0">
+                <div class="relative flex items-center">
+                    <input type="text" id="chatInput" placeholder="Upload PDFs to analyze manuscript contents..." disabled class="w-full text-xs font-serif bg-zinc-50 border border-zinc-300 px-3 py-2.5 pr-10 focus:outline-none focus:border-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-900 dark:border-zinc-850 dark:text-zinc-100 dark:focus:border-zinc-700" />
+                    <button type="submit" id="chatSendBtn" disabled class="absolute right-2 text-zinc-400 hover:text-arxivRed disabled:opacity-30 disabled:hover:text-zinc-400 transition-colors cursor-pointer dark:hover:text-red-400">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+                <div id="chatStatusHelper" class="text-[9px] font-mono text-zinc-400 mt-2 text-center">
+                    <i class="fa-solid fa-lock text-[8px]"></i> Upload a document & connect API key to interact.
+                </div>
+            </form>
+
+        </aside>
+
+    </div>
+
+    <!-- Core Application Logic Script -->
+    <script>
+        // Setup initial application states
+        let state = {
+            darkMode: true,
+            apiKey: localStorage.getItem('io_scholar_gemini_key') || '',
+            apiConnected: false,
+            apiChecking: false,
+            documents: [],
+            selectedDocId: null,
+            currentPage: 1,
+            zoomScale: 1.0,
+            textMode: false,
+            messages: [],
+            chatLoading: false,
+            activeModel: null
+        };
+
+        // DOM elements cache
+        const el = {
+            themeToggleBtn: document.getElementById('themeToggleBtn'),
+            themeBtnText: document.getElementById('themeBtnText'),
+            geminiApiKey: document.getElementById('geminiApiKey'),
+            apiStatusText: document.getElementById('apiStatusText'),
+            apiBeacon: document.getElementById('apiBeacon'),
+            apiFeedback: document.getElementById('apiFeedback'),
+            apiKeyVerifyIcon: document.getElementById('apiKeyVerifyIcon'),
+            dropZone: document.getElementById('dropZone'),
+            emptyDocsView: document.getElementById('emptyDocsView'),
+            docsList: document.getElementById('docsList'),
+            docCount: document.getElementById('docCount'),
+            viewerToolbar: document.getElementById('viewerToolbar'),
+            currentDocTitle: document.getElementById('currentDocTitle'),
+            currentPageNum: document.getElementById('currentPageNum'),
+            totalPageNum: document.getElementById('totalPageNum'),
+            textPageNum: document.getElementById('textPageNum'),
+            zoomText: document.getElementById('zoomText'),
+            viewerSplash: document.getElementById('viewerSplash'),
+            renderSurface: document.getElementById('renderSurface'),
+            canvasContainer: document.getElementById('canvasContainer'),
+            pdfCanvas: document.getElementById('pdfCanvas'),
+            plainTextView: document.getElementById('plainTextView'),
+            plainTextOutput: document.getElementById('plainTextOutput'),
+            charCount: document.getElementById('charCount'),
+            viewModeBtn: document.getElementById('viewModeBtn'),
+            viewModeText: document.getElementById('viewModeText'),
+            chatStream: document.getElementById('chatStream'),
+            chatInput: document.getElementById('chatInput'),
+            chatSendBtn: document.getElementById('chatSendBtn'),
+            chatStatusHelper: document.getElementById('chatStatusHelper'),
+            headerDocSelector: document.getElementById('headerDocSelector'),
+            headerDocContainer: document.getElementById('headerDocContainer')
+        };
+
+        // Window load setup
+        window.onload = function() {
+            // Configure PDF.js Worker path explicitly to prevent iframe parsing failures
+            if (window.pdfjsLib) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+            }
+
+            // Apply theme on start
+            applyTheme();
+
+            // Set default API key from localstorage if available
+            if (state.apiKey) {
+                el.geminiApiKey.value = state.apiKey;
+                verifyApiKey();
+            }
+        };
+
+        // Theme toggler
+        function toggleTheme() {
+            state.darkMode = !state.darkMode;
+            applyTheme();
+        }
+
+        function applyTheme() {
+            if (state.darkMode) {
+                document.documentElement.classList.add('dark');
+                el.themeBtnText.innerText = "Light Aspect";
+            } else {
+                document.documentElement.classList.remove('dark');
+                el.themeBtnText.innerText = "Dark Aspect";
+            }
+            // Trigger a re-render of PDF to ensure resolution scaling fits the theme adjustments nicely
+            if (state.selectedDocId) {
+                renderPdfPage();
+            }
+        }
+
+        // Handle API input
+        function handleApiKeyInput(e) {
+            state.apiKey = e.target.value.trim();
+            if (e.key === 'Enter') {
+                verifyApiKey();
+                return;
+            }
+            if (!state.apiKey) {
+                state.apiConnected = false;
+                localStorage.removeItem('io_scholar_gemini_key');
+                updateApiStatusUI();
+                updateChatState();
+                el.apiFeedback.classList.add('hidden');
+            }
+        }
+
+        // Verify API key directly with Google Gemini endpoint
+        async function verifyApiKey() {
+            // Read input directly to handle paste, click, or autofill events safely
+            state.apiKey = el.geminiApiKey.value.trim();
+            
+            if (!state.apiKey) {
+                state.apiConnected = false;
+                localStorage.removeItem('io_scholar_gemini_key');
+                updateApiStatusUI();
+                updateChatState();
+                el.apiFeedback.classList.add('hidden');
+                return;
+            }
+            
+            state.apiChecking = true;
+            el.apiFeedback.classList.add('hidden');
+            el.apiKeyVerifyIcon.className = "fa-solid fa-spinner animate-spin text-xs";
+            
+            // Handshake using currently active, non-retired stable models
+            const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
+            let handshakeSuccess = false;
+            let lastErrorMessage = '';
+            
+            for (const model of modelsToTry) {
+                try {
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${state.apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: "Handshake" }] }]
+                            })
+                        }
+                    );
+                    
+                    const data = await response.json();
+                    if (response.ok && data.candidates) {
+                        handshakeSuccess = true;
+                        state.activeModel = model;
+                        break;
+                    } else {
+                        lastErrorMessage = data.error?.message || "Invalid credentials supplied.";
+                    }
+                } catch (err) {
+                    lastErrorMessage = err.message || "Connection refused.";
+                }
+            }
+            
+            if (handshakeSuccess) {
+                state.apiConnected = true;
+                localStorage.setItem('io_scholar_gemini_key', state.apiKey);
+            } else {
+                state.apiConnected = false;
+                el.apiFeedback.innerText = lastErrorMessage || "Verification failed.";
+                el.apiFeedback.classList.remove('hidden');
+            }
+            
+            state.apiChecking = false;
+            el.apiKeyVerifyIcon.className = "fa-solid fa-vial text-xs";
+            updateApiStatusUI();
+            updateChatState();
+        }
+
+        function updateApiStatusUI() {
+            if (state.apiConnected) {
+                el.apiBeacon.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-active";
+                el.apiStatusText.innerText = "Verified";
+                el.apiStatusText.className = "text-[9px] font-mono text-emerald-500 font-bold";
+            } else {
+                el.apiBeacon.className = "w-2.5 h-2.5 rounded-full bg-zinc-400";
+                el.apiStatusText.innerText = "Not Linked";
+                el.apiStatusText.className = "text-[9px] font-mono text-zinc-500";
+            }
+        }
+
+        // File Selection triggers
+        function triggerFileInput() {
+            document.getElementById('pdfFileInput').click();
+        }
+
+        // File Drag & Drop events
+        el.dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            el.dropZone.classList.add('border-arxivRed', 'dark:border-red-500');
+        });
+
+        el.dropZone.addEventListener('dragleave', () => {
+            el.dropZone.classList.remove('border-arxivRed', 'dark:border-red-500');
+        });
+
+        el.dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            el.dropZone.classList.remove('border-arxivRed', 'dark:border-red-500');
+            const files = Array.from(e.dataTransfer.files);
+            await processFiles(files);
+        });
+
+        async function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            await processFiles(files);
+        }
+
+        // Process & Extract Documents
+        async function processFiles(files) {
+            const pdfs = files.filter(f => f.type === 'application/pdf');
+            if (pdfs.length === 0) {
+                return;
+            }
+
+            for (const file of pdfs) {
+                try {
+                    const reader = new FileReader();
+                    reader.onload = async function(event) {
+                        try {
+                            const typedArray = new Uint8Array(event.target.result);
+                            const pdfDoc = await pdfjsLib.getDocument({ data: typedArray }).promise;
+                            const numPages = pdfDoc.numPages;
+                            
+                            // Extract full context from all pages
+                            const extractedPages = [];
+                            for (let i = 1; i <= numPages; i++) {
+                                const page = await pdfDoc.getPage(i);
+                                const textContent = await page.getTextContent();
+                                const pageText = textContent.items.map(item => item.str).join(' ');
+                                extractedPages.push({
+                                    pageNum: i,
+                                    text: pageText
+                                });
+                            }
+
+                            const documentId = Math.random().toString(36).substring(7);
+                            const newDoc = {
+                                id: documentId,
+                                name: file.name,
+                                size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+                                totalPages: numPages,
+                                pages: extractedPages,
+                                pdfInstance: pdfDoc
+                            };
+
+                            state.documents.push(newDoc);
+                            
+                            // Auto-select first uploaded
+                            if (!state.selectedDocId) {
+                                state.selectedDocId = documentId;
+                                state.currentPage = 1;
+                            }
+
+                            // Refresh UI panels
+                            updateDocRegistryUI();
+                            updateWorkspaceUI();
+                            updateChatState();
+
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        }
+
+        // Refresh document sidebar rendering list
+        function updateDocRegistryUI() {
+            el.docCount.innerText = state.documents.length;
+            
+            if (state.documents.length === 0) {
+                el.emptyDocsView.classList.remove('hidden');
+                el.docsList.classList.add('hidden');
+                el.headerDocContainer.classList.add('hidden');
+                return;
+            }
+
+            el.emptyDocsView.classList.add('hidden');
+            el.docsList.classList.remove('hidden');
+            el.headerDocContainer.classList.remove('hidden');
+
+            // Render Sidebar lists
+            el.docsList.innerHTML = '';
+            el.headerDocSelector.innerHTML = '';
+
+            state.documents.forEach(doc => {
+                const isActive = doc.id === state.selectedDocId;
+                
+                // Sidebar row creation
+                const docRow = document.createElement('div');
+                docRow.className = `p-3 border cursor-pointer flex justify-between items-start transition-all ${
+                    isActive 
+                        ? 'bg-zinc-50 border-zinc-400 dark:bg-zinc-900 dark:border-zinc-700' 
+                        : 'border-transparent hover:bg-zinc-100/50 dark:hover:bg-zinc-900/30'
+                }`;
+                docRow.onclick = () => switchActiveDocument(doc.id);
+
+                docRow.innerHTML = `
+                    <div class="flex items-start space-x-2 overflow-hidden w-full">
+                        <i class="fa-solid fa-file-pdf mt-0.5 flex-shrink-0 ${isActive ? 'text-arxivRed dark:text-red-500' : 'text-zinc-400'}"></i>
+                        <div class="overflow-hidden w-full">
+                            <p class="text-xs font-serif font-bold truncate pr-1 text-zinc-800 dark:text-zinc-200">
+                                ${doc.name}
+                            </p>
+                            <p class="text-[9px] font-mono text-zinc-500 mt-0.5">
+                                [pages: ${doc.totalPages}] · size: ${doc.size}
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="handleDeleteDocument('${doc.id}', event)" class="text-zinc-400 hover:text-arxivRed dark:hover:text-red-400 p-0.5 opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+                
+                el.docsList.appendChild(docRow);
+
+                // Add to central header dropdown too
+                const opt = document.createElement('option');
+                opt.value = doc.id;
+                opt.innerText = doc.name;
+                opt.selected = isActive;
+                el.headerDocSelector.appendChild(opt);
+            });
+        }
+
+        // Delete publication record
+        function handleDeleteDocument(id, event) {
+            event.stopPropagation();
+            state.documents = state.documents.filter(d => d.id !== id);
+            
+            if (state.selectedDocId === id) {
+                if (state.documents.length > 0) {
+                    state.selectedDocId = state.documents[0].id;
+                    state.currentPage = 1;
+                } else {
+                    state.selectedDocId = null;
+                    state.currentPage = 1;
+                }
+            }
+
+            updateDocRegistryUI();
+            updateWorkspaceUI();
+            updateChatState();
+        }
+
+        // Target document switcher
+        function switchActiveDocument(id) {
+            state.selectedDocId = id;
+            state.currentPage = 1;
+            updateDocRegistryUI();
+            updateWorkspaceUI();
+        }
+
+        // Control main center view
+        function updateWorkspaceUI() {
+            const activeDoc = state.documents.find(d => d.id === state.selectedDocId);
+            
+            if (!activeDoc) {
+                el.viewerSplash.classList.remove('hidden');
+                el.renderSurface.classList.add('hidden');
+                el.viewerToolbar.classList.add('invisible');
+                return;
+            }
+
+            el.viewerSplash.classList.add('hidden');
+            el.renderSurface.classList.remove('hidden');
+            el.viewerToolbar.classList.remove('invisible');
+
+            el.currentDocTitle.innerText = activeDoc.name;
+            el.currentPageNum.innerText = state.currentPage;
+            el.textPageNum.innerText = state.currentPage;
+            el.totalPageNum.innerText = activeDoc.totalPages;
+
+            // Render view toggles
+            if (state.textMode) {
+                el.canvasContainer.classList.add('hidden');
+                el.plainTextView.classList.remove('hidden');
+                el.viewModeBtn.classList.add('bg-zinc-100', 'dark:bg-zinc-850');
+                el.viewModeText.innerText = "MANUSCRIPT CANVAS";
+                renderPlainText();
+            } else {
+                el.canvasContainer.classList.remove('hidden');
+                el.plainTextView.classList.add('hidden');
+                el.viewModeBtn.classList.remove('bg-zinc-100', 'dark:bg-zinc-850');
+                el.viewModeText.innerText = "TXT EXTRACT";
+                renderPdfPage();
+            }
+        }
+
+        // Toggles Text Extract mode vs Canvas Preview
+        function toggleTextMode() {
+            state.textMode = !state.textMode;
+            updateWorkspaceUI();
+        }
+
+        // Canvas Rendering System
+        let currentRenderTask = null;
+        async function renderPdfPage() {
+            const activeDoc = state.documents.find(d => d.id === state.selectedDocId);
+            if (!activeDoc || !activeDoc.pdfInstance) return;
+
+            try {
+                // Cancel any pending render tasks to ensure performance stability
+                if (currentRenderTask) {
+                    currentRenderTask.cancel();
+                }
+
+                const page = await activeDoc.pdfInstance.getPage(state.currentPage);
+                const canvas = el.pdfCanvas;
+                const context = canvas.getContext('2d');
+                
+                // Calculate device resolution modifiers
+                const viewport = page.getViewport({ scale: state.zoomScale });
+                const pixelRatio = window.devicePixelRatio || 1;
+                
+                canvas.width = viewport.width * pixelRatio;
+                canvas.height = viewport.height * pixelRatio;
+                canvas.style.width = `${viewport.width}px`;
+                canvas.style.height = `${viewport.height}px`;
+                
+                context.scale(pixelRatio, pixelRatio);
+
+                // Set beautiful clean background behind vector renderings
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+
+                currentRenderTask = page.render(renderContext);
+                await currentRenderTask.promise;
+                currentRenderTask = null;
+
+            } catch (err) {
+                if (err.name !== 'RenderingCancelledException') {
+                    console.error("Renderer Failure:", err);
+                }
+            }
+        }
+
+        // Render Page plain text layout
+        function renderPlainText() {
+            const activeDoc = state.documents.find(d => d.id === state.selectedDocId);
+            if (!activeDoc) return;
+
+            const pageData = activeDoc.pages.find(p => p.pageNum === state.currentPage);
+            if (pageData) {
+                // Build layout
+                el.plainTextOutput.innerHTML = pageData.text 
+                    ? `<div>${pageData.text}</div>` 
+                    : `<div class="italic text-zinc-400">Page text is empty or non-extractable vectors.</div>`;
+                el.charCount.innerText = `${pageData.text.length} characters`;
+            }
+        }
+
+        // Zoom actions
+        function zoomViewport(val) {
+            state.zoomScale = Math.max(0.5, Math.min(2.5, state.zoomScale + val));
+            el.zoomText.innerText = `${Math.round(state.zoomScale * 100)}%`;
+            renderPdfPage();
+        }
+
+        // Control pagination
+        function changePage(direction) {
+            const activeDoc = state.documents.find(d => d.id === state.selectedDocId);
+            if (!activeDoc) return;
+
+            const targetPage = state.currentPage + direction;
+            if (targetPage >= 1 && targetPage <= activeDoc.totalPages) {
+                state.currentPage = targetPage;
+                updateWorkspaceUI();
+            }
+        }
+
+        // Update user typing permissions based on API + Doc load states
+        function updateChatState() {
+            const isReady = state.apiConnected && state.documents.length > 0;
+            
+            el.chatInput.disabled = !isReady;
+            el.chatSendBtn.disabled = !isReady || state.chatLoading;
+
+            if (isReady) {
+                el.chatInput.placeholder = "Enter query (e.g., 'What is the methodology of this paper?')...";
+                el.chatStatusHelper.innerHTML = `<span class="text-emerald-500 font-bold"><i class="fa-solid fa-circle-check"></i> Connected</span> and contextually grounded using ${state.activeModel}.`;
+            } else {
+                if (!state.apiConnected) {
+                    el.chatInput.placeholder = "⚠️ Please verify your Gemini Node Key first...";
+                    el.chatStatusHelper.innerHTML = `<i class="fa-solid fa-lock text-[8px]"></i> Link API key inside sidebar to start queries.`;
+                } else {
+                    el.chatInput.placeholder = "⚠️ Upload PDF manuscripts to activate AI assistant...";
+                    el.chatStatusHelper.innerHTML = `<i class="fa-solid fa-file-circle-plus"></i> Submit a PDF manuscript above to begin exploration.`;
+                }
+            }
+        }
+
+        // Construct complete contextual prompt vector for Gemini RAG
+        function getRagContextPrompt() {
+            if (state.documents.length === 0) return "";
+            
+            let context = "You have access to the following uploaded research paper manuscripts:\n\n";
+            state.documents.forEach(doc => {
+                context += `========================= START MANUSCRIPT: ${doc.name} =========================\n`;
+                doc.pages.forEach(page => {
+                    context += `--- [Page ${page.pageNum}] ---\n${page.text}\n`;
+                });
+                context += `========================= END MANUSCRIPT: ${doc.name} =========================\n\n`;
+            });
+            return context;
+        }
+
+        // Resilient Multiversion Gemini API dispatch helper
+        async function callGeminiApi(prompt, context, systemInstructions) {
+            // Priority check: Use verified handshake model first, falling back onto current standards
+            const models = state.activeModel 
+                ? [state.activeModel, 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash']
+                : ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
+            let lastError = null;
+
+            for (const model of models) {
+                try {
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${state.apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [
+                                    { parts: [{ text: `${context}\n\nUser Question: ${prompt}` }] }
+                                ],
+                                systemInstruction: {
+                                    parts: [{ text: systemInstructions }]
+                                }
+                            })
+                        }
+                    );
+                    
+                    const data = await response.json();
+                    if (response.ok && data.candidates) {
+                        return { text: data.candidates[0].content?.parts?.[0]?.text, modelUsed: model };
+                    } else {
+                        // Hard fail immediately on auth/credential limits to prevent loops
+                        if (response.status === 400 || response.status === 403) {
+                            throw new Error(data.error?.message || "Authentication credentials failed verification.");
+                        }
+                        throw new Error(data.error?.message || `Model error in ${model}`);
+                    }
+                } catch (err) {
+                    console.warn(`Attempt with model ${model} skipped:`, err);
+                    lastError = err;
+                }
+            }
+            throw lastError || new Error("Failed to communicate with the generative gateway.");
+        }
+
+        // Send user queries out to Gemini Model
+        async function handleSendQuery(e) {
+            e.preventDefault();
+            const prompt = el.chatInput.value.trim();
+            if (!prompt || state.chatLoading) return;
+
+            el.chatInput.value = '';
+            
+            // Append User Question to Thread view
+            appendMessage('user', prompt);
+            setChatLoadingUI(true);
+
+            try {
+                const context = getRagContextPrompt();
+                
+                // Instructions focused on peer review outputs and precise citations
+                const systemInstructions = `You are a highly analytical, peer-review style academic research assistant named "io.scholar". 
+Your goal is to answer research questions comprehensively based on the provided document contexts.
+
+Instructions:
+1. Ground your claims rigorously inside the uploaded documents.
+2. Structure your analysis with headers, clean logical progressions, and bold insights.
+3. Critically, cite your findings using exact bracketed page citations: e.g. "[Page X]". The UI will intercept these page tags and make them interactive clickable buttons. Do not say "Page X" without brackets. Always say "[Page X]".
+4. If a query refers to topics or questions outside the provided papers, politely guide the user back to the context.`;
+
+                const result = await callGeminiApi(prompt, context, systemInstructions);
+                const rawResponseText = result.text || "No response received from peer-review network.";
+                
+                // Scan the returned text to build citation arrays
+                const parsedCitations = [];
+                const pageRegex = /\[Page\s*(\d+)\]/gi;
+                let match;
+                while ((match = pageRegex.exec(rawResponseText)) !== null) {
+                    parsedCitations.push(parseInt(match[1]));
+                }
+
+                appendMessage('model', rawResponseText, Array.from(new Set(parsedCitations)));
+
+            } catch (err) {
+                console.error(err);
+                appendMessage('model', `Connection Error: ${err.message}. Ensure your network status remains optimal and your Gemini Node Key has sufficient quota limits.`, [], true);
+            } finally {
+                setChatLoadingUI(false);
+            }
+        }
+
+        // Set Loading state on chat thread
+        function setChatLoadingUI(loading) {
+            state.chatLoading = loading;
+            el.chatSendBtn.disabled = loading;
+            
+            const loaderId = 'chat-response-loader';
+            const loaderExists = document.getElementById(loaderId);
+
+            if (loading) {
+                if (!loaderExists) {
+                    const lElement = document.createElement('div');
+                    lElement.id = loaderId;
+                    lElement.className = "flex flex-col space-y-1.5 max-w-[80%] mr-auto items-start";
+                    lElement.innerHTML = `
+                        <div class="flex items-center space-x-1.5 text-[9px] text-zinc-400 font-mono">
+                            <i class="fa-solid fa-spinner animate-spin text-arxivRed dark:text-red-400"></i>
+                            <span>io.scholar is reasoning...</span>
+                        </div>
+                        <div class="p-3.5 border border-dashed border-zinc-300 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 text-zinc-400 flex items-center space-x-2">
+                            <span class="italic text-xs">Synthesizing papers...</span>
+                        </div>
+                    `;
+                    el.chatStream.appendChild(lElement);
+                    el.chatStream.scrollTop = el.chatStream.scrollHeight;
+                }
+            } else {
+                if (loaderExists) {
+                    loaderExists.remove();
+                }
+            }
+        }
+
+        // Append messages onto the study timeline
+        function appendMessage(role, text, citations = [], isError = false) {
+            const mId = Math.random().toString(36).substring(7);
+            const msgItem = document.createElement('div');
+            
+            const alignment = role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start';
+            const speakerName = role === 'user' ? 'You' : 'io.scholar';
+            const speakerIcon = role === 'user' ? 'fa-regular fa-user' : 'fa-solid fa-microchip text-arxivRed dark:text-red-400';
+
+            // Distinctive coloring matching classic academic text styles
+            let bubbleStyle = "p-3 border ";
+            if (isError) {
+                bubbleStyle += "border-red-300 bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50";
+            } else if (role === 'user') {
+                bubbleStyle += "border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100";
+            } else {
+                bubbleStyle += "border-zinc-300 bg-white dark:border-zinc-800 dark:bg-zinc-950 text-zinc-700 dark:text-zinc-300";
+            }
+
+            msgItem.className = `flex flex-col space-y-1.5 max-w-[90%] ${alignment}`;
+            
+            // Render basic paragraph text cleanly
+            const renderedHtml = `
+                <div class="flex items-center space-x-1.5 text-[9px] text-zinc-400 font-mono">
+                    <i class="${speakerIcon}"></i>
+                    <span>${speakerName}</span>
+                </div>
+                <div class="${bubbleStyle} select-text">
+                    <div class="whitespace-pre-wrap">${escapeHTML(text)}</div>
+                    
+                    <!-- Citations rendering area -->
+                    ${citations && citations.length > 0 ? `
+                        <div class="mt-3 pt-2.5 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap gap-1.5 items-center">
+                            <span class="text-[8px] uppercase font-mono text-zinc-400 block w-full mb-0.5">MANUSCRIPT REFERENCES:</span>
+                            ${citations.map(cPage => `
+                                <button onclick="handleCitationNavigation(${cPage})" class="px-2 py-0.5 border border-zinc-300 hover:bg-zinc-50 rounded-sm text-[9px] font-mono text-arxivRed hover:border-arxivRed dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-red-400 transition-all flex items-center space-x-1">
+                                    <span>Page ${cPage}</span>
+                                    <i class="fa-solid fa-arrow-right-long text-[8px]"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            msgItem.innerHTML = renderedHtml;
+            el.chatStream.appendChild(msgItem);
+            
+            // Scroll container smoothly
+            el.chatStream.scrollTop = el.chatStream.scrollHeight;
+        }
+
+        // Navigate viewer on citation clicks
+        function handleCitationNavigation(pageNum) {
+            const activeDoc = state.documents.find(d => d.id === state.selectedDocId);
+            if (!activeDoc) return;
+
+            if (pageNum >= 1 && pageNum <= activeDoc.totalPages) {
+                state.currentPage = pageNum;
+                updateWorkspaceUI();
+            }
+        }
+
+        // Clean safety wrapper
+        function escapeHTML(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
